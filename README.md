@@ -41,7 +41,7 @@ http://127.0.0.1:5000
 ## 폴더구조
 ```plaintext
 .  
-├── main.py                 # 메인 애플리케이션 스크립트  
+├── main.py                # 메인 애플리케이션 스크립트  
 ├── services/              # 백엔드 서비스 통합  
 │   ├── search.py          # 검색 및 데이터 처리 로직  
 │   └── models.py          # AI 모델 통합  
