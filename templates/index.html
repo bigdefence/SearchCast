@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 팟캐스트 생성기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Pretendard', sans-serif;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1; /* 스크롤바 색상 */
+    border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #a0aec0; /* 스크롤바 색상 (hover) */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background-color: #f7fafc; /* 스크롤 트랙 색상 */
+}
+
+        /* 스크롤 페이딩 효과 */
+        .scroll-fade-top::before,
+        .scroll-fade-bottom::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 30px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .scroll-fade-top::before {
+            top: 0;
+            background: linear-gradient(to bottom, white, transparent);
+        }
+
+        .scroll-fade-bottom::after {
+            bottom: 0;
+            background: linear-gradient(to top, white, transparent);
+        }
+        #search-results-container, footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    background-color: white;
+}
+
+/* 채팅 컨테이너 스크롤 가능하도록 설정 */
+#chat-container {
+    flex: 1; /* 채팅 컨테이너가 가변적으로 확장 */
+    overflow-y: auto; /* 스크롤 활성화 */
+    max-height: calc(100vh - 300px); /* 헤더, 검색결과, 입력란을 제외한 높이 */
+}
+    </style>
+</head>
+<body class="bg-gray-50 flex h-screen overflow-hidden">
+    <div class="flex w-full max-w-7xl mx-auto my-4 bg-white shadow-2xl rounded-2xl overflow-hidden">
+        <!-- 사이드바 (스크롤 가능) -->
+        <div class="w-80 bg-gradient-to-b from-white to-blue-50 border-r border-gray-200 p-6 flex flex-col overflow-hidden">
+            <div class="flex items-center mb-6">
+                <i class="ri-podcast-line text-3xl text-blue-600 mr-3"></i>
+                <h2 class="text-2xl font-bold text-gray-800">콘텐츠 결과</h2>
+            </div>
+            
+            <!-- 결과 섹션들을 스크롤 가능하게 변경 -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar scroll-fade-top scroll-fade-bottom space-y-6">
+                <!-- 팟캐스트 섹션 -->
+                <div class="mb-6">
+                    <div class="flex items-center mb-3">
+                        <i class="ri-volume-up-line text-xl text-blue-500 mr-2"></i>
+                        <h3 class="text-lg font-semibold text-gray-700">팟캐스트</h3>
+                    </div>
+                    <div id="podcast-player" class="hidden bg-blue-50 rounded-lg p-3">
+                        <audio id="podcast-audio" controls class="w-full"></audio>
+                    </div>
+                </div>
+
+                <!-- 이미지 결과 섹션 -->
+                <div class="mb-6">
+                    <div class="flex items-center mb-3">
+                        <i class="ri-image-line text-xl text-green-500 mr-2"></i>
+                        <h3 class="text-lg font-semibold text-gray-700">관련 이미지</h3>
+                    </div>
+                    <div id="image-results-container" class="grid grid-cols-3 gap-2 custom-scrollbar max-h-64 overflow-y-auto">
+                        <!-- 이미지들이 동적으로 추가될 공간 -->
+                    </div>
+                </div>
+
+                <!-- 동영상 결과 섹션 -->
+                <div class="mb-6">
+                    <div class="flex items-center mb-3">
+                        <i class="ri-video-line text-xl text-purple-500 mr-2"></i>
+                        <h3 class="text-lg font-semibold text-gray-700">관련 동영상</h3>
+                    </div>
+                    <div id="video-results-container" class="grid grid-cols-1 gap-2 custom-scrollbar max-h-64 overflow-y-auto">
+                        <!-- 동영상들이 동적으로 추가될 공간 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <div class="flex-1 flex flex-col">
+            <!-- 헤더 -->
+            <header class="bg-white border-b border-gray-200 p-6 shadow-sm flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800 flex items-center">
+                        <i class="ri-magic-line text-blue-600 mr-3"></i>
+                        AI 팟캐스트 생성기
+                    </h1>
+                    <p class="text-gray-500 mt-2">AI가 주제에 맞는 맞춤형 팟캐스트와 콘텐츠를 생성합니다.</p>
+                </div>
+            </header>
+
+            <!-- 채팅 컨테이너 (스크롤 가능) -->
+            <div class="flex-1 flex flex-col relative overflow-hidden">
+    <!-- 채팅 메시지 -->
+    <div 
+        id="chat-container" 
+        class="flex-1 p-6 overflow-y-auto custom-scrollbar scroll-fade-top scroll-fade-bottom bg-gray-50 space-y-4 relative"
+    >
+        <!-- 환영 메시지 -->
+        <div class="flex space-x-3">
+            <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
+                <i class="ri-robot-line text-2xl text-white"></i>
+            </div>
+            <div class="flex-1">
+                <div class="bg-white border border-blue-100 rounded-xl p-4 shadow-sm">
+                    <p class="text-gray-800">안녕하세요! 주제를 입력하면 AI가 맞춤형 팟캐스트와 관련 콘텐츠를 생성해드립니다.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+                <!-- 검색 결과 -->
+                <div 
+        id="search-results-container" 
+        class="bg-white border-t border-gray-200 p-4 max-h-64 overflow-y-auto custom-scrollbar"
+    >
+        <div class="flex items-center mb-3">
+            <i class="ri-search-line text-xl text-gray-600 mr-2"></i>
+            <h3 class="text-lg font-semibold text-gray-800">검색 결과</h3>
+        </div>
+        <div id="search-results" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </div>
+
+            <!-- 입력 영역 -->
+            <footer class="bg-white border-t border-gray-200 p-6">
+                <form id="chat-form" class="flex space-x-3">
+                    <div class="flex-1 relative">
+                        <input 
+                            type="text" 
+                            id="query" 
+                            name="query" 
+                            required 
+                            class="w-full px-4 py-3 pl-10 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="팟캐스트 주제를 입력하세요..."
+                        >
+                        <i class="ri-chat-3-line absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                    <button 
+                        type="submit" 
+                        id="submit-btn"
+                        class="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 flex items-center"
+                    >
+                        <i class="ri-send-plane-line mr-2"></i>
+                        생성
+                    </button>
+                </form>
+            </footer>
+        </div>
+            </div>
+
+    <script>
+    const chatForm = document.getElementById('chat-form');
+    const chatContainer = document.getElementById('chat-container');
+    const podcastPlayer = document.getElementById('podcast-player');
+    const podcastAudio = document.getElementById('podcast-audio');
+    const imageResultsContainer = document.getElementById('image-results-container');
+    const videoResultsContainer = document.getElementById('video-results-container');
+    const searchResultsContainer = document.getElementById('search-results');
+    const searchResultsWrapper = document.getElementById('search-results-container');
+    const submitBtn = document.getElementById('submit-btn');
+
+    // 로딩 메시지 생성
+    function createLoadingMessage() {
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'flex space-x-3 loading-message';
+        loadingDiv.innerHTML = `
+            <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+                <i class="ri-robot-line text-2xl text-white"></i>
+            </div>
+            <div class="flex-1">
+                <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                    <div class="typing-loader flex space-x-1 items-center">
+                        <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                        <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
+                        <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
+                        <span class="ml-2 text-gray-500">생성 중입니다...</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        chatContainer.appendChild(loadingDiv);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+        return loadingDiv;
+    }
+
+    // 로딩 메시지 제거
+    function removeLoadingMessage() {
+        const loadingMessage = document.querySelector('.loading-message');
+        if (loadingMessage) loadingMessage.remove();
+    }
+
+    // 메시지 추가
+    function addMessage(content, isUser = false) {
+        removeLoadingMessage();
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'flex space-x-3 message-container';
+
+        const iconDiv = document.createElement('div');
+        iconDiv.className = `w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center ${
+            isUser ? 'bg-blue-500' : 'bg-green-500'
+        }`;
+        iconDiv.innerHTML = isUser
+            ? `<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a4 4 0 00-4-4H8a4 4 0 00-4 4v2a2 2 0 002 2h8a2 2 0 002-2v-2a4 4 0 00-4-4h0z" />
+               </svg>`
+            : `<i class="ri-robot-line text-2xl text-white"></i>`;
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'flex-1';
+        contentDiv.innerHTML = `
+            <div class="${isUser ? 'bg-blue-50 border border-blue-100' : 'bg-white border border-gray-200'} rounded-xl p-4 shadow-sm">
+                <p class="text-gray-800 whitespace-pre-wrap">${content}</p>
+            </div>
+        `;
+
+        messageDiv.appendChild(iconDiv);
+        messageDiv.appendChild(contentDiv);
+        chatContainer.appendChild(messageDiv);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    // API 데이터 처리
+    async function handleApiResponse(response) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+
+            try {
+                const jsonStartIndex = buffer.indexOf('{');
+                const jsonEndIndex = buffer.lastIndexOf('}') + 1;
+
+                if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
+                    const jsonString = buffer.slice(jsonStartIndex, jsonEndIndex);
+                    const results = JSON.parse(jsonString);
+
+                    // 결과 렌더링
+                    renderResults(results);
+                }
+            } catch (e) {
+                continue;
+            }
+        }
+    }
+
+    // 검색 결과 렌더링
+    function renderResults(results) {
+    if (results.image_results) {
+        results.image_results.forEach(img => {
+            const imgWrapper = document.createElement('a'); // <a> 태그로 변경
+            imgWrapper.href = img.link; // 이미지 링크로 이동
+            imgWrapper.target = '_blank'; // 새 창에서 열기
+            imgWrapper.className = 'relative group';
+            imgWrapper.innerHTML = `
+                <img src="${img.thumbnail || img.link}" alt="${img.title}" class="w-full h-24 object-cover rounded-md transition-transform duration-300 group-hover:scale-105">
+                <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 truncate">
+                    ${img.title || '제목 없음'}
+                </div>
+            `;
+            imageResultsContainer.appendChild(imgWrapper);
+        });
+    }
+
+    if (results.video_results) {
+        results.video_results.forEach(video => {
+            const videoWrapper = document.createElement('a'); // <a> 태그로 변경
+            videoWrapper.href = video.link; // 동영상 링크로 이동
+            videoWrapper.target = '_blank'; // 새 창에서 열기
+            videoWrapper.className = 'relative group';
+            videoWrapper.innerHTML = `
+                <img src="${video.thumbnail}" alt="${video.title}" class="w-full h-24 object-cover rounded-md transition-transform duration-300 group-hover:scale-105">
+                <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 truncate">
+                    ${video.title || '제목 없음'}
+                </div>
+            `;
+            videoResultsContainer.appendChild(videoWrapper);
+        });
+    }
+
+    if (results.search_results) {
+        results.search_results.forEach(result => {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'bg-white border border-gray-200 rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow duration-300 group';
+            resultDiv.innerHTML = `
+                <a href="${result.link}" target="_blank" class="block">
+                    <h4 class="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors duration-300">${result.title}</h4>
+                    <p class="text-gray-600 text-sm line-clamp-2">${result.snippet}</p>
+                    <span class="text-xs text-gray-500 mt-1 block truncate">${result.link}</span>
+                </a>
+            `;
+            searchResultsContainer.appendChild(resultDiv);
+        });
+        searchResultsWrapper.classList.remove('hidden');
+    }
+
+    if (results.podcast_url) {
+        podcastAudio.src = results.podcast_url;
+        podcastPlayer.classList.remove('hidden');
+    }
+
+    if (results.ai_response) {
+        addMessage(results.ai_response, false);
+    }
+}
+
+    // 폼 제출 처리
+    chatForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(chatForm);
+        const query = formData.get('query');
+
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+        // UI 초기화
+        imageResultsContainer.innerHTML = '';
+        videoResultsContainer.innerHTML = '';
+        searchResultsContainer.innerHTML = '';
+        searchResultsWrapper.classList.add('hidden');
+        podcastPlayer.classList.add('hidden');
+
+        addMessage(query, true);
+        createLoadingMessage();
+
+        try {
+            const response = await fetch('/', {
+                method: 'POST',
+                body: formData,
+            });
+
+            removeLoadingMessage();
+            await handleApiResponse(response);
+        } catch (error) {
+            console.error('Error:', error);
+            removeLoadingMessage();
+            addMessage("오류가 발생했습니다. 다시 시도해 주세요.", false);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    });
+</script>
+
+</body>
+</html>
+
