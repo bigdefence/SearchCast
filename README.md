@@ -2,7 +2,7 @@
 ### 이 저장소는 팟캐스트 생성과 AI 기반 검색 기능을 통합한 Flask 기반 웹 애플리케이션입니다. 사용자는 원하는 주제를 입력해 웹에서 관련 정보를 수집하고, 이를 기반으로 AI가 생성한 스크립트와 오디오로 팟캐스트를 제작할 수 있습니다.
 
 # Video
-[Watch Video]([https://github.com/bigdefence/SearchCast/blob/main/assets/your-video.mp4](https://github.com/bigdefence/SearchCast/blob/main/searchcast.mp4))
+[Watch Video]([https://github.com/bigdefence/SearchCast/blob/main/assets/your-video.mp4]
 
 
 ## 주요 기능
