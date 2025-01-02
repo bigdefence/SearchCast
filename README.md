@@ -3,7 +3,7 @@
 
 # Video
 ![Demo](https://github.com/bigdefence/SearchCast/blob/main/searchcast.gif)
-<video src="https://github.com/bigdefence/SearchCast/blob/main/searchcast"></video>
+
 ## 주요 기능
 ### 🎙 팟캐스트 생성
 - AI 모델(예: ChatGPT, Gemini)을 활용한 팟캐스트 스크립트 생성.
